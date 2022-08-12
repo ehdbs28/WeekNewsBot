@@ -17,17 +17,19 @@ client.on('message', message => {
         const embed = new MessageEmbed();
         embed.setTitle("!도움말");
         embed.setColor("FFB2F5");
-        embed.setDescription("\n**!도움말**\n```도움말창을 보여줍니다.```\n\n**!내정보**\n```사용자의 정보를 보여줍니다.```");
+        embed.setDescription("\n**!도움말**\n```도움말창을 보여줍니다.```\n\n**!소개**\n```이 봇에 대한 소개임당```");
         message.channel.send({embeds: [embed]});
     }
 
-    if(message.content == "!내정보"){
+    if(message.content == "!소개"){
         //message.channel.send(message.author.displayAvatarURL(ImageData));
         const embed = new MessageEmbed();
-        embed.setTitle("**사용자 정보**");
+        embed.setAuthor("2m8", "https://cdn.discordapp.com/attachments/957615021490315324/994641496148029501/7eb206f172cfb621d77f57a9dc1b5bb5_11227730928.png");
+        embed.setTitle("**봇소개**");
         embed.setColor("FFB2F5");
-        embed.setDescription("내 정보");
-        embed.addField(name = "이름", value = "> " + message.author.username, inline = false);
+        //embed.setDescription("내 정보");
+        //embed.addField(name = "이름", value = "> " + message.author.username, inline = false);
+        //embed.setDescription()
         //embed.addField(name = "아바타", value = , inline = false);
         message.reply({embeds : [embed]});
     }
