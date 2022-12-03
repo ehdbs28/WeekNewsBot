@@ -16,35 +16,36 @@ client.on('messageCreate', msg => {
     let args = msg.content.substring(PREFIX.length).split(" ");
 
     switch(args[0]){
+        case 'p':
         case 'play':
 
             async function play(connection, msg){
                 var server = servers[msg.guild.id];
 
-                const stream = ytdl(server.queue[0], {filter: "audioonly"})
-                const player = joinVoiceChannel.createAudioPlayer();
-                const resource = joinVoiceChannel.createAudioResource(stream);
+                console.log(servers);
 
-                await player.play(resource);
-                connection.subscribe(player);
+                if(!server.dispatcher){
+                    const stream = ytdl(server.queue[0], {filter: "audioonly"})
+                    const player = joinVoiceChannel.createAudioPlayer();
+                    const resource = joinVoiceChannel.createAudioResource(stream);
+                    
+                    await player.play(resource);
+                    connection.subscribe(player);
+                    
+                    server.dispatcher = connection;
+                    
+                    server.queue.shift();
 
-                server.dispatcher = player;
+                    player.on(joinVoiceChannel.AudioPlayerStatus.Idle, () => {
+                        if(server.queue[0]){
+                            play(connection, msg);
+                        }
+                        else{
+                            connection.disconnect();
+                        }
+                    });
+                }
 
-                server.dispatcher.on(joinVoiceChannel.AudioPlayerStatus.Playing, () => {
-                    console.log("오디오 재생중");
-                })
-                
-                server.queue.shift();
-                
-                server.dispatcher.off(!joinVoiceChannel.AudioPlayerStatus.Playing, () => {
-                    console.log('노래 끝');
-                    if(server.queue[0]){
-                        play(connection, msg);
-                    }
-                    else{
-                        connection.disconnect();
-                    }
-                });
             }
 
             if(!args[1]){
@@ -79,6 +80,23 @@ client.on('messageCreate', msg => {
 
             msg.reply({ embeds : [embed]});
 
+            break;
+
+        case 'skip':
+            var server = servers[msg.guild.id];
+            if(server.dispatcher){
+                play(server.dispatcher, msg);
+            }
+            break;
+
+        case 'stop':
+            var server = servers[msg.guild.id];
+            for(var i = server.queue.length - 1; i >= 0; i--){
+                server.queue.splice(i, 1);
+            }
+
+            server.dispatcher.disconnect();
+            msg.reply(":stop_button: 노래를 종료합니다");
             break;
     }      
 });
