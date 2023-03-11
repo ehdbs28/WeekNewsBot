@@ -1,6 +1,8 @@
 const Fs = require('fs');
 const Discord = require('discord.js');
 const Google = require('googleapis');
+const Axios = require('axios');
+const Cheerio = require('cheerio');
 
 const client = new Discord.Client({ intents: ["Guilds", "GuildMessages", "MessageContent"]});
 const Youtube = Google.google.youtube({
@@ -15,11 +17,26 @@ const EMBED_COLOR = '0099FF';
 const ManagerID = '418003150310473730';
 const VIDIO_LINK_TEMPLETE = 'https://www.youtube.com/watch?v=';
 
+const Constellation = {
+    물병: 0,
+    양: 1,
+    쌍둥이: 2,
+    사자: 3,
+    천칭: 4,
+    사수: 5,
+    물고기: 6,
+    황소: 7,
+    게: 8,
+    처녀: 9,
+    전갈: 10,
+    염소: 11
+};
+
 client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}`);
 });
 
-client.on('messageCreate', msg => {
+client.on('messageCreate', async msg => {
     if(msg.author.bot || msg.content[0] != PREFIX) return;
 
     let args = msg.content.substring(PREFIX.length).split(" ");
@@ -42,6 +59,22 @@ client.on('messageCreate', msg => {
             .catch(error => {
                 console.log(error);
             });
+            break;
+        case '오늘의운세':
+        case '운세':
+            if(args[1] in Constellation){
+                try{
+                    const embed = await FortuneEmbedCreater(msg.author.avatarURL(), msg.author.username, args[1]);
+                    msg.reply({ embeds: [embed] });
+                }
+                catch(error){
+                    console.log(error);
+                    msg.reply('운세를 불러오는 중 오류가 발생하였습니다.');
+                }
+            }
+            else{
+                msg.reply('정확한 별자리를 입력하여주세요.');
+            }
             break;
         case 'DataSet':
             if(msg.author.id !== ManagerID) return;
@@ -89,7 +122,7 @@ function InfoEmbedCreater(userIcon, userName){
             { name: '\n', value: '\n' },
             { name: '!오늘의노래 or !노래추천', value: ':notes: - 관리자가 선정한 오늘의 노래를 추천합니다.'},
             { name: '\n', value: '\n' },
-            { name: '!오늘의운세 [띠] or !운세 [띠]', value: ':four_leaf_clover: - 띠별 오늘의 운세를 알려줍니다.'},
+            { name: '!오늘의운세 [별자리] or !운세 [별자리]', value: ':four_leaf_clover: - 별자리별 오늘의 운세를 알려줍니다.'},
             { name: '\n', value: '\n' },
             { name: '!이번주알고리즘 or !알고리즘', value: ':desktop: - 관리자가 선정한 이번주의 알고리즘문제를 추천합니다.'},
             { name: '\n', value: '\n' }
@@ -184,6 +217,27 @@ async function RecommendSongEmbedCreater(userIcon, userName) {
     });
 }
 
+async function FortuneEmbedCreater(userIcon, userName, constellation){
+    try {
+        const [fortuneDate, fortuneText] = await Promise.all([
+            GetFortuneHTMLData(constellation, '.con_date').then(data => data.text()),
+            GetFortuneHTMLData(constellation, '.text._cs_fortune_text').then(data => data.text())
+        ]);
+
+        const embed = new Discord.EmbedBuilder()
+            .setColor(EMBED_COLOR)
+            .setTitle(`:four_leaf_clover: ${constellation}자리 운세`)
+            .setDescription(`\`${fortuneDate}\`\n${fortuneText}`)
+            .setTimestamp()
+            .setFooter({ text: userName, iconURL: userIcon });
+
+        return embed;
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
+}
+
 function FormatDuration(duration) {
     const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
     const hours = (parseInt(match[1]) || 0);
@@ -195,6 +249,22 @@ function FormatDuration(duration) {
 
 function GetVidioThumbnail(id){
     return `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
+}
+
+async function GetFortuneHTMLData(constellation, findClass){
+    return new Promise(async (resolve, reject) => {
+        try{
+            const url = `https://search.naver.com/search.naver?where=nexearch&sm=tab_etc&qvt=0&query=${constellation}자리%20운세`;
+            const { data } = await Axios.get(url);
+            const $ = Cheerio.load(data);
+            const fortune = $(findClass).eq(0);
+            resolve(fortune);
+        }
+        catch(error){
+            console.log(error);
+            reject(error);
+        }
+    })
 }
 
 client.login(Token);
