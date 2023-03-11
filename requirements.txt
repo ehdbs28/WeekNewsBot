@@ -1,0 +1,4 @@
+discord.js
+googleapis
+axios
+cheerio
