@@ -5,13 +5,6 @@ const Token = 'MTA4NDAxMzg2MDQwODgwNzQ2NA.GDfwOA.4Y1XW1gkoC-ht-xwd7P4a298AR8mg4F
 
 const PREFIX = '!';
 
-function EmbedInfo(title, description, footerImg, footerTxt){
-    this.title = title;
-    this.description = description;
-    this.footerImg = footerImg;
-    this.footerTxt = footerTxt;
-}
-
 client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}`);
 });
@@ -21,37 +14,47 @@ client.on('messageCreate', msg => {
 
     let args = msg.content.substring(PREFIX.length).split(" ");
 
-    if(args[0] === 'test'){
-        const embed = EmbedCreater(new EmbedInfo('testTitle', 'testDescription', msg.author.avatarURL(), msg.author.username));
-        msg.channel.send({ embeds: [embed] });
+    switch(args[0]){
+        case '소개':
+            var embed = IntroduceBotEmbedCreater(msg.author.avatarURL(), msg.author.username);
+            msg.reply({ embeds: [embed] });
+            break;
+        case '설명':
+        case '도움말':
+            var embed = InfoEmbedCreater(msg.author.avatarURL(), msg.author.username);
+            msg.reply({ embeds: [embed] });
+            break;
     }
 });
 
-function EmbedCreater(EmbedInfo){
-    // const embed = new Discord.EmbedBuilder()
-    //     .setColor(0x0099FF)
-    //     .setTitle('Some title')
-    //     .setURL('https://discord.js.org/')
-    //     .setAuthor({ name: 'Some name', iconURL: 'https://i.imgur.com/AfFp7pu.png', url: 'https://discord.js.org' })
-    //     .setDescription('Some description here')
-    //     .setThumbnail('https://i.imgur.com/AfFp7pu.png')
-    //     .addFields(
-    //         { name: 'Regular field title', value: 'Some value here' },
-    //         { name: '\u200B', value: '\u200B' },
-    //         { name: 'Inline field title', value: 'Some value here', inline: true },
-    //         { name: 'Inline field title', value: 'Some value here', inline: true },
-    //     )
-    //     .addFields({ name: 'Inline field title', value: 'Some value here', inline: true })
-    //     .setImage('https://i.imgur.com/AfFp7pu.png')
-    //     .setTimestamp()
-    //     .setFooter({ text: 'Some footer text here', iconURL: 'https://i.imgur.com/AfFp7pu.png' });
-
+function IntroduceBotEmbedCreater(){
     const embed = new Discord.EmbedBuilder()
-        .setColor('Random')
-        .setTitle(EmbedInfo.title)
-        .setDescription(EmbedInfo.description)
+        .setColor('0099FF')
+        .setTitle(':file_folder: __봇 소개__')
+        .setDescription('2학년 1반 **이 주의 새로운 이슈**를 알려주는 봇입니다 :)')
+        .setFooter({text: '도윤#0111 제작'});
+
+    return embed;
+}
+
+function InfoEmbedCreater(userIcon, userName){
+    const embed = new Discord.EmbedBuilder()
+        .setColor('0099FF')
+        .setTitle(':file_folder: __도움말__')
+        .addFields(
+            { name: '!소개', value: ':pencil: - 봇에 대한 소개글을 출력합니다.'},
+            { name: '\n', value: '\n' },
+            { name: '!도움말 or !설명', value: ':robot: - 봇에 대한 도움말을 알려줍니다.' },
+            { name: '\n', value: '\n' },
+            { name: '!오늘의노래 or !노래추천', value: ':notes: - 관리자가 선정한 오늘의 노래를 추천합니다.'},
+            { name: '\n', value: '\n' },
+            { name: '!오늘의운세 [띠] or !운세 [띠]', value: ':four_leaf_clover: - 띠별 오늘의 운세를 알려줍니다.'},
+            { name: '\n', value: '\n' },
+            { name: '!이번주알고리즘 or !알고리즘', value: ':desktop: - 관리자가 선정한 이번주의 알고리즘문제를 추천합니다.'},
+            { name: '\n', value: '\n' }
+        )
         .setTimestamp()
-        .setFooter( { text: EmbedInfo.footerTxt, iconURL: EmbedInfo.footerImg });
+        .setFooter({ text: userName, iconURL: userIcon });
 
     return embed;
 }
