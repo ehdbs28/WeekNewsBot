@@ -70,7 +70,7 @@ Object.freeze(BackjoonLevel);
 
 client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}`);
-    client.user.setActivity('!설명 / !도움말', { type: 'LISTENING'});
+    client.user.setPresence({ activities: [{ name: '!설명 / !도움말' }], status: 'idle' });
 });
 
 client.on('messageCreate', async msg => {
