@@ -3,7 +3,6 @@ const Discord = require('discord.js');
 const Google = require('googleapis');
 const Axios = require('axios');
 const Cheerio = require('cheerio');
-const { loadavg } = require('os');
 
 const client = new Discord.Client({ intents: ["Guilds", "GuildMessages", "MessageContent"]});
 const Youtube = Google.google.youtube({
