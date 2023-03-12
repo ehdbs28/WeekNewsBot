@@ -71,6 +71,7 @@ Object.freeze(BackjoonLevel);
 
 client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}`);
+    client.user.setActivity('!설명 / !도움말', { type: 'LISTENING'});
 });
 
 client.on('messageCreate', async msg => {
@@ -125,7 +126,6 @@ client.on('messageCreate', async msg => {
         case 'DataSet':
             if(msg.author.id !== ManagerID) return;
             DataSet(args[1], args[2]);
-            GetSongInfo();
             break;
     }
 });
