@@ -356,7 +356,6 @@ async function GetBackjoonData(){
     
             const url = `https://solved.ac/api/v3/problem/show?problemId=${jsonData.weekBackjoon}`;
             try{
-                console.log(url);
                 const { data } = await Axios.get(url);
                 
                 const problemURL = `https://www.acmicpc.net/problem/${jsonData.weekBackjoon}`;
