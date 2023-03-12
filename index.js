@@ -3,6 +3,7 @@ const Discord = require('discord.js');
 const Google = require('googleapis');
 const Axios = require('axios');
 const Cheerio = require('cheerio');
+const { loadavg } = require('os');
 
 const client = new Discord.Client({ intents: ["Guilds", "GuildMessages", "MessageContent"]});
 const Youtube = Google.google.youtube({
@@ -10,7 +11,7 @@ const Youtube = Google.google.youtube({
     auth: 'AIzaSyDAU3df1sy9T9Y73vRn8eKo51LdDkhSyyM'
 });
 
-const Token = 'MTA4NDAxMzg2MDQwODgwNzQ2NA.GDfwOA.4Y1XW1gkoC-ht-xwd7P4a298AR8mg4FYj7xq6c';
+const Token = 'MTA4NDAxMzg2MDQwODgwNzQ2NA.GA9WoP.JohvkRgQMt8w8KiOEdxAfxEph8z8Yk6FaEkbbo';
 
 const PREFIX = '!';
 const EMBED_COLOR = '0099FF';
@@ -31,6 +32,42 @@ const Constellation = {
     전갈: 10,
     염소: 11
 };
+Object.freeze(Constellation);
+
+const BackjoonLevel = {
+    무등급: 0,
+    브론즈V: 1,
+    브론즈IV: 2,
+    브론즈III: 3,
+    브론즈II: 4,
+    브론즈I: 5,
+    실버V: 6,
+    실버IV: 7,
+    실버III: 8,
+    실버II: 9,
+    실버I: 10,
+    골드V: 11,
+    골드IV: 12,
+    골드III: 13,
+    골드II: 14,
+    골드I: 15,
+    플레티넘V: 16,
+    플레티넘IV: 17,
+    플레티넘III: 18,
+    플레티넘II: 19,
+    플레티넘I: 20,
+    다이아몬드V: 21,
+    다이아몬드IV: 22,
+    다이아몬드III: 23,
+    다이아몬드II: 24,
+    다이아몬드I: 25,
+    루비V: 26,
+    루비IV: 27,
+    루비III: 28,
+    루비II: 29,
+    루비I: 30
+};
+Object.freeze(BackjoonLevel);
 
 client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}`);
@@ -76,17 +113,27 @@ client.on('messageCreate', async msg => {
                 msg.reply('정확한 별자리를 입력하여주세요.');
             }
             break;
+        case '이번주백준':
+        case '백준':
+            BackjoonProblemEmbedCreater(msg.author.avatarURL(), msg.author.username).then(embed => {
+                msg.reply({content: '`이주의 추천백준문제입니다 :)`', embeds: [embed] });
+            })
+            .catch(error => {
+                console.log(error);
+            });
+            break;
         case 'DataSet':
             if(msg.author.id !== ManagerID) return;
-            DataSet(args[1]);
+            DataSet(args[1], args[2]);
             GetSongInfo();
             break;
     }
 });
 
-function DataSet(songId){
+function DataSet(songId, backjoonId){
     let Data = {
-        todaySong : songId
+        todaySong : songId,
+        weekBackjoon : backjoonId
     }
 
     let JsonData = JSON.stringify(Data);
@@ -124,7 +171,7 @@ function InfoEmbedCreater(userIcon, userName){
             { name: '\n', value: '\n' },
             { name: '!오늘의운세 [별자리] or !운세 [별자리]', value: ':four_leaf_clover: - 별자리별 오늘의 운세를 알려줍니다.'},
             { name: '\n', value: '\n' },
-            { name: '!이번주알고리즘 or !알고리즘', value: ':desktop: - 관리자가 선정한 이번주의 알고리즘문제를 추천합니다.'},
+            { name: '!이번주백준 or !백준', value: ':desktop: - 관리자가 선정한 이번주의 백준문제를 추천합니다.'},
             { name: '\n', value: '\n' }
         )
         .setTimestamp()
@@ -219,15 +266,14 @@ async function RecommendSongEmbedCreater(userIcon, userName) {
 
 async function FortuneEmbedCreater(userIcon, userName, constellation){
     try {
-        const [fortuneDate, fortuneText] = await Promise.all([
-            GetFortuneHTMLData(constellation, '.con_date').then(data => data.text()),
-            GetFortuneHTMLData(constellation, '.text._cs_fortune_text').then(data => data.text())
+        const [fortuneData] = await Promise.all([
+            GetFortuneHTMLData(constellation).then(data => data)
         ]);
 
         const embed = new Discord.EmbedBuilder()
             .setColor(EMBED_COLOR)
             .setTitle(`:four_leaf_clover: ${constellation}자리 운세`)
-            .setDescription(`\`${fortuneDate}\`\n${fortuneText}`)
+            .setDescription(`\`${fortuneData.fortuneDate}\`\n${fortuneData.fortune}`)
             .setTimestamp()
             .setFooter({ text: userName, iconURL: userIcon });
 
@@ -236,6 +282,34 @@ async function FortuneEmbedCreater(userIcon, userName, constellation){
         console.log(error);
         throw error;
     }
+}
+
+async function BackjoonProblemEmbedCreater(userIcon, userName){
+    return new Promise(async (resolve, reject) => {
+        try{
+            const backjoonData = await GetBackjoonData()
+
+            const embed = new Discord.EmbedBuilder()
+                .setColor(EMBED_COLOR)
+                .setAuthor({ name: backjoonData.problemNum })
+                .setTitle(backjoonData.problemTitle)
+                .setURL(backjoonData.problemURL)
+                .setThumbnail('https://onlinejudgeimages.s3-ap-northeast-1.amazonaws.com/images/boj-og.png')
+                .addFields(
+                    { name: '난이도', value: backjoonData.Level, inline: true },
+                    { name: '\u200B', value: '\u200B', inline: true },
+                    { name: '알고리즘 분류', value: backjoonData.algorithmType, inline: true },
+                )
+                .setTimestamp()
+                .setFooter({ text: userName, iconURL: userIcon });
+
+            resolve(embed);
+        }
+        catch(error){
+            console.log(error);
+            reject(error);
+        }
+    })
 }
 
 function FormatDuration(duration) {
@@ -251,20 +325,64 @@ function GetVidioThumbnail(id){
     return `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
 }
 
-async function GetFortuneHTMLData(constellation, findClass){
+async function GetFortuneHTMLData(constellation){
     return new Promise(async (resolve, reject) => {
         try{
             const url = `https://search.naver.com/search.naver?where=nexearch&sm=tab_etc&qvt=0&query=${constellation}자리%20운세`;
             const { data } = await Axios.get(url);
             const $ = Cheerio.load(data);
-            const fortune = $(findClass).eq(0);
-            resolve(fortune);
+
+            const fortuneDate = $('.con_date').eq(0).text();
+            const fortune = $('.text._cs_fortune_text').eq(0).text();
+
+            resolve({ fortuneDate, fortune });
         }
         catch(error){
             console.log(error);
             reject(error);
         }
     })
+}
+
+async function GetBackjoonData(){
+    return new Promise(async (resolve, reject) => {
+        Fs.readFile('Data.json', 'utf-8', async (error, data) => {
+            if (error) {
+                console.log('error in read jsonFile');
+                reject(error);
+                return;
+            }
+    
+            var jsonData = JSON.parse(data);
+    
+            const url = `https://solved.ac/api/v3/problem/show?problemId=${jsonData.weekBackjoon}`;
+            try{
+                console.log(url);
+                const { data } = await Axios.get(url);
+                
+                const problemURL = `https://www.acmicpc.net/problem/${jsonData.weekBackjoon}`;
+                const problemNum = `${jsonData.weekBackjoon}번`;
+                const problemTitle = data.titles[0].title;
+                const GetLevel = currentLevel => {
+                    for(let key in BackjoonLevel){
+                        if(BackjoonLevel[key] == currentLevel){
+                            return key;
+                        }
+                    }
+    
+                    return null;
+                };
+                const Level = GetLevel(data.level);
+                const algorithmType = data.tags[0].displayNames[0].name;
+                
+                resolve( {problemURL, problemNum, problemTitle, Level, algorithmType} );
+            }
+            catch(error){
+                console.log(error);
+                reject(error);
+            }
+        })
+    }) 
 }
 
 client.login(Token);
