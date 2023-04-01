@@ -130,10 +130,12 @@ client.on('messageCreate', async msg => {
             break;
         case 'SongSet':
             if(msg.author.id !== ManagerID) return;
-            DataSet(args[1], args[2]);
+            SongDataSet(args[1]);
             break;
         case 'BackjoonSet':
-        
+            if(msg.author.id !== ManagerID) return;
+            BackJoonDataSet(args[1]);
+            break;
     }
 });
 
@@ -153,21 +155,55 @@ function GetSettingData(){
     });
 }
 
-function DataSet(songId, backjoonId){
-    let Data = {
-        todaySong : songId,
-        weekBackjoon : backjoonId
-    }
-
-    let JsonData = JSON.stringify(Data);
-
-    Fs.writeFile('Data.json', JsonData, 'utf8', error => {
-        if(error){
-            console.log('fail to write file');
+function SongDataSet(songId){
+    Fs.readFile('Setting.json', 'utf-8', (error, data) => {
+        if (error) {
+            console.log('error in read jsonFile');
+            reject(error);
             return;
         }
-        
-        console.log('success to write file');
+
+        let Data = {
+            todaySong : songId,
+            weekBackjoon : data.weekBackjoon
+        }
+    
+        let JsonData = JSON.stringify(Data);
+    
+        Fs.writeFile('Data.json', JsonData, 'utf8', error => {
+            if(error){
+                console.log('fail to write file');
+                return;
+            }
+            
+            console.log('success to write file');
+        });
+    });
+}
+
+function BackJoonDataSet(backjoonId){
+    Fs.readFile('Setting.json', 'utf-8', (error, data) => {
+        if (error) {
+            console.log('error in read jsonFile');
+            reject(error);
+            return;
+        }
+
+        let Data = {
+            todaySong : data.todaySong,
+            weekBackjoon : backjoonId
+        }
+    
+        let JsonData = JSON.stringify(Data);
+    
+        Fs.writeFile('Data.json', JsonData, 'utf8', error => {
+            if(error){
+                console.log('fail to write file');
+                return;
+            }
+            
+            console.log('success to write file');
+        });
     });
 }
 
