@@ -5,7 +5,7 @@ const Axios = require('axios');
 const Cheerio = require('cheerio');
 
 const { YOUTUBE_API_KEY, TOKEN, MANAGER_ID, EMBED_COLOR, PREFIX, VIDIO_LINK_TEMPLETE, IMAGE_HEIGHT, IMAGE_WIDTH  } = require('./Setting.json');
-const { SongData, BackjoonData, Memes } = require('./Data.json');
+let { SongData, BackjoonData, Memes } = require('./Data.json');
 
 const client = new Discord.Client({ intents: ["Guilds", "GuildMessages", "MessageContent"]});
 const Youtube = Google.google.youtube({
@@ -129,7 +129,7 @@ client.on('messageCreate', async msg => {
             if(msg.author.id !== MANAGER_ID) return;
             SongDataSet(args[1]).then(state => {
                 if(state)
-                    msg.reply('백준 데이터 저장성공!');
+                    msg.reply('노래 데이터 저장성공!');
                 else
                     msg.reply('무언가 문제가 발생함...');
             })
@@ -155,7 +155,7 @@ client.on('messageCreate', async msg => {
             if(msg.author.id !== MANAGER_ID) return;
             AddMeme(args[1]).then(state => {
                 if(state)
-                    msg.reply('백준 데이터 저장성공!');
+                    msg.reply('밈 데이터 저장성공!');
                 else
                     msg.reply('무언가 문제가 발생함...');
             })
@@ -169,6 +169,7 @@ client.on('messageCreate', async msg => {
 
 function SongDataSet(songId){
     return new Promise((resolve, reject) => {
+        SongData = songId;
         let Data = {
             SongData : songId,
             BackjoonData : BackjoonData,
@@ -192,6 +193,7 @@ function SongDataSet(songId){
 
 function BackjoonDataSet(backjoonId) {
     return new Promise((resolve, reject) => {
+        BackjoonData = backjoonId;
         let Data = {
             SongData: SongData,
             BackjoonData: backjoonId,
