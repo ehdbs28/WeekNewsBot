@@ -127,83 +127,113 @@ client.on('messageCreate', async msg => {
             break;
         case '노래세팅':
             if(msg.author.id !== MANAGER_ID) return;
-            if(SongDataSet(args[1])){
-                msg.reply('노래 데이터 저장성공!');
-            }
+            SongDataSet(args[1]).then(state => {
+                if(state)
+                    msg.reply('백준 데이터 저장성공!');
+                else
+                    msg.reply('무언가 문제가 발생함...');
+            })
+            .catch(err => {
+                console.log(err);
+                msg.reply('무언가 문제가 발생함...');
+            });
             break;
         case '백준세팅':
             if(msg.author.id !== MANAGER_ID) return;
-            if(await BackjoonDataSet(args[1])){
-                msg.reply('백준 데이터 저장성공!');
-            }
+            BackjoonDataSet(args[1]).then(state => {
+                if(state)
+                    msg.reply('백준 데이터 저장성공!');
+                else
+                    msg.reply('무언가 문제가 발생함...');
+            })
+            .catch(err => {
+                console.log(err);
+                msg.reply('무언가 문제가 발생함...');
+            });
             break;
         case '밈추가':
             if(msg.author.id !== MANAGER_ID) return;
-            if(AddMeme(args[1])){
-                msg.reply('밈 데이터 저장성공!');
-            }
+            AddMeme(args[1]).then(state => {
+                if(state)
+                    msg.reply('백준 데이터 저장성공!');
+                else
+                    msg.reply('무언가 문제가 발생함...');
+            })
+            .catch(err => {
+                console.log(err);
+                msg.reply('무언가 문제가 발생함...');
+            });
             break;
     }
 });
 
 function SongDataSet(songId){
-    let Data = {
-        SongData : songId,
-        BackjoonData : BackjoonData,
-        Memes : Memes
-    }
-
-    let JsonData = JSON.stringify(Data);
-
-    Fs.writeFile('Data.json', JsonData, 'utf8', error => {
-        if(error){
-            console.log('fail to write file');
-            return false;
+    return new Promise((resolve, reject) => {
+        let Data = {
+            SongData : songId,
+            BackjoonData : BackjoonData,
+            Memes : Memes
         }
-        
-        console.log('success to write file');
-        return true;
+
+        let JsonData = JSON.stringify(Data);
+
+        Fs.writeFile('Data.json', JsonData, 'utf8', error => {
+            if(error){
+                console.log('fail to write file');
+                reject(false);
+            }
+            else{
+                console.log('success to write file');
+                resolve(true);
+            }
+        });
     });
 }
 
-function BackjoonDataSet(backjoonId){
-    let Data = {
-        SongData : SongData,
-        BackjoonData : backjoonId,
-        Memes : Memes
-    }
+function BackjoonDataSet(backjoonId) {
+    return new Promise((resolve, reject) => {
+        let Data = {
+            SongData: SongData,
+            BackjoonData: backjoonId,
+            Memes: Memes
+        };
 
-    let JsonData = JSON.stringify(Data);
+        let JsonData = JSON.stringify(Data);
 
-    Fs.writeFile('Data.json', JsonData, 'utf8', error => {
-        if(error){
-            console.log('fail to write file');
-            return false;
-        }
-        
-        console.log('success to write file');
-        return true;
+        Fs.writeFile('Data.json', JsonData, 'utf8', error => {
+            if (error) {
+                console.log('fail to write file');
+                reject(false);
+            } 
+            else {
+                console.log('success to write file');
+                resolve(true);
+            }
+        });
     });
 }
 
 function AddMeme(memeUrl){
-    Memes.push(memeUrl);
-    let Data = {
-        SongData : SongData,
-        BackjoonData : BackjoonData,
-        Memes : Memes
-    }
-
-    let JsonData = JSON.stringify(Data);
-
-    Fs.writeFile('Data.json', JsonData, 'utf8', error => {
-        if(error){
-            console.log('fail to write file');
-            return false;
+    return new Promise((resolve, reject) => {
+        Memes.push(memeUrl);
+        let Data = {
+            SongData : SongData,
+            BackjoonData : BackjoonData,
+            Memes : Memes
         }
-        
-        console.log('success to write file');
-        return true;
+
+        let JsonData = JSON.stringify(Data);
+
+        Fs.writeFile('Data.json', JsonData, 'utf8', error => {
+            if(error){
+                console.log('fail to write file');
+                reject(false);
+            }
+            else{
+                console.log('success to write file');
+                resolve(true);
+            }
+        });
     });
 }
 
