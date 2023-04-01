@@ -128,13 +128,23 @@ client.on('messageCreate', async msg => {
                 console.log(error);
             });
             break;
-        case 'SongSet':
+        case '노래세팅':
             if(msg.author.id !== ManagerID) return;
-            SongDataSet(args[1]);
+            if(SongDataSet(args[1])){
+                msg.reply('무언가 오류가 발생함..');
+            }
+            else{
+                msg.reply('노래 데이터 저장 성공!');
+            }
             break;
-        case 'BackjoonSet':
+        case '백준세팅':
             if(msg.author.id !== ManagerID) return;
-            BackJoonDataSet(args[1]);
+            if(BackJoonDataSet(args[1])){
+                msg.reply('무언가 오류가 발생함...');
+            }
+            else{
+                msg.reply('백준 데이터 저장 성공!');
+            }
             break;
     }
 });
@@ -160,7 +170,7 @@ function SongDataSet(songId){
         if (error) {
             console.log('error in read jsonFile');
             reject(error);
-            return;
+            return false;
         }
 
         let Data = {
@@ -173,10 +183,11 @@ function SongDataSet(songId){
         Fs.writeFile('Data.json', JsonData, 'utf8', error => {
             if(error){
                 console.log('fail to write file');
-                return;
+                return false;
             }
             
             console.log('success to write file');
+            return true;
         });
     });
 }
@@ -186,7 +197,7 @@ function BackJoonDataSet(backjoonId){
         if (error) {
             console.log('error in read jsonFile');
             reject(error);
-            return;
+            return false;
         }
 
         let Data = {
@@ -199,10 +210,11 @@ function BackJoonDataSet(backjoonId){
         Fs.writeFile('Data.json', JsonData, 'utf8', error => {
             if(error){
                 console.log('fail to write file');
-                return;
+                return false;
             }
             
             console.log('success to write file');
+            return true;
         });
     });
 }
