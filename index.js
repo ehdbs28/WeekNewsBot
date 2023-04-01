@@ -4,6 +4,7 @@ const Google = require('googleapis');
 const Axios = require('axios');
 const Cheerio = require('cheerio');
 const { YOUTUBE_API_KEY, TOKEN, MANAGER_ID, EMBED_COLOR, PREFIX, VIDIO_LINK_TEMPLETE  } = require('./Setting.json');
+const { SongData, BackjoonData } = require('./Data.json');
 
 const client = new Discord.Client({ intents: ["Guilds", "GuildMessages", "MessageContent"]});
 const Youtube = Google.google.youtube({
@@ -127,7 +128,7 @@ client.on('messageCreate', async msg => {
             break;
         case '백준세팅':
             if(msg.author.id !== MANAGER_ID) return;
-            if(BackJoonDataSet(args[1])){
+            if(BackjoonDataSet(args[1])){
                 msg.reply('무언가 오류가 발생함...');
             }
             else{
@@ -138,56 +139,40 @@ client.on('messageCreate', async msg => {
 });
 
 function SongDataSet(songId){
-    Fs.readFile('Setting.json', 'utf-8', (error, data) => {
-        if (error) {
-            console.log('error in read jsonFile');
-            reject(error);
+    let Data = {
+        SongData : songId,
+        BackjoonData : backjoonId
+    }
+
+    let JsonData = JSON.stringify(Data);
+
+    Fs.writeFile('Data.json', JsonData, 'utf8', error => {
+        if(error){
+            console.log('fail to write file');
             return false;
         }
-
-        let Data = {
-            todaySong : songId,
-            weekBackjoon : data.weekBackjoon
-        }
-    
-        let JsonData = JSON.stringify(Data);
-    
-        Fs.writeFile('Data.json', JsonData, 'utf8', error => {
-            if(error){
-                console.log('fail to write file');
-                return false;
-            }
-            
-            console.log('success to write file');
-            return true;
-        });
+        
+        console.log('success to write file');
+        return true;
     });
 }
 
-function BackJoonDataSet(backjoonId){
-    Fs.readFile('Setting.json', 'utf-8', (error, data) => {
-        if (error) {
-            console.log('error in read jsonFile');
-            reject(error);
+function BackjoonDataSet(backjoonId){
+    let Data = {
+        SongData : SongData,
+        BackjoonData : backjoonId
+    }
+
+    let JsonData = JSON.stringify(Data);
+
+    Fs.writeFile('Data.json', JsonData, 'utf8', error => {
+        if(error){
+            console.log('fail to write file');
             return false;
         }
-
-        let Data = {
-            todaySong : data.todaySong,
-            weekBackjoon : backjoonId
-        }
-    
-        let JsonData = JSON.stringify(Data);
-    
-        Fs.writeFile('Data.json', JsonData, 'utf8', error => {
-            if(error){
-                console.log('fail to write file');
-                return false;
-            }
-            
-            console.log('success to write file');
-            return true;
-        });
+        
+        console.log('success to write file');
+        return true;
     });
 }
 
@@ -224,59 +209,47 @@ function InfoEmbedCreater(userIcon, userName){
 }
 
 function GetSongInfo() {
-    return new Promise((resolve, reject) => {
-        Fs.readFile('Data.json', 'utf-8', (error, data) => {
+    Youtube.videos.list({
+        id: SongData,
+        part: 'snippet, statistics, contentDetails'
+    }, (error, res) => {
+        if (error) {
+            console.log('error in youtube data parsing | VIDIO');
+            reject(error);
+            return;
+        }
+
+        const vidio = res.data.items[0];
+        
+        let songInfo = {
+            songTime: FormatDuration(vidio.contentDetails.duration),
+            songURL: VIDIO_LINK_TEMPLETE + SongData,
+            songName: vidio.snippet.title,
+            songThumbnail: GetVidioThumbnail(SongData),
+            channelName: '',
+            channelIcon: ''
+        }
+
+        const channelID = vidio.snippet.channelId;
+
+        Youtube.channels.list({
+            id: channelID,
+            part: 'snippet'
+        }, (error, res) => {
             if (error) {
-                console.log('error in read jsonFile');
+                console.log('error in youtube data parsing | CHANNEL');
                 reject(error);
                 return;
             }
 
-            var data = JSON.parse(data);
+            channel = res.data.items[0];
 
-            Youtube.videos.list({
-                id: data.todaySong,
-                part: 'snippet, statistics, contentDetails'
-            }, (error, res) => {
-                if (error) {
-                    console.log('error in youtube data parsing | VIDIO');
-                    reject(error);
-                    return;
-                }
+            songInfo.channelName = channel.snippet.title;
+            songInfo.channelIcon = channel.snippet.thumbnails.high.url;
 
-                const vidio = res.data.items[0];
-                
-                let songInfo = {
-                    songTime: FormatDuration(vidio.contentDetails.duration),
-                    songURL: VIDIO_LINK_TEMPLETE + data.todaySong,
-                    songName: vidio.snippet.title,
-                    songThumbnail: GetVidioThumbnail(data.todaySong),
-                    channelName: '',
-                    channelIcon: ''
-                }
-
-                const channelID = vidio.snippet.channelId;
-
-                Youtube.channels.list({
-                    id: channelID,
-                    part: 'snippet'
-                }, (error, res) => {
-                    if (error) {
-                        console.log('error in youtube data parsing | CHANNEL');
-                        reject(error);
-                        return;
-                    }
-
-                    channel = res.data.items[0];
-
-                    songInfo.channelName = channel.snippet.title;
-                    songInfo.channelIcon = channel.snippet.thumbnails.high.url;
-
-                    resolve(songInfo);
-                });
-            });
+            resolve(songInfo);
         });
-    })
+    });
 }
 
 async function RecommendSongEmbedCreater(userIcon, userName) {
@@ -388,43 +361,31 @@ async function GetFortuneHTMLData(constellation){
 }
 
 async function GetBackjoonData(){
-    return new Promise(async (resolve, reject) => {
-        Fs.readFile('Data.json', 'utf-8', async (error, data) => {
-            if (error) {
-                console.log('error in read jsonFile');
-                reject(error);
-                return;
+    const url = `https://solved.ac/api/v3/problem/show?problemId=${BackJoonData}`;
+    try{
+        const { data } = await Axios.get(url);
+        
+        const problemURL = `https://www.acmicpc.net/problem/${BackjoonData}`;
+        const problemNum = `${BackJoonData}번`;
+        const problemTitle = data.titles[0].title;
+        const GetLevel = currentLevel => {
+            for(let key in BackjoonLevel){
+                if(BackjoonLevel[key] == currentLevel){
+                    return key;
+                }
             }
-    
-            var jsonData = JSON.parse(data);
-    
-            const url = `https://solved.ac/api/v3/problem/show?problemId=${jsonData.weekBackjoon}`;
-            try{
-                const { data } = await Axios.get(url);
-                
-                const problemURL = `https://www.acmicpc.net/problem/${jsonData.weekBackjoon}`;
-                const problemNum = `${jsonData.weekBackjoon}번`;
-                const problemTitle = data.titles[0].title;
-                const GetLevel = currentLevel => {
-                    for(let key in BackjoonLevel){
-                        if(BackjoonLevel[key] == currentLevel){
-                            return key;
-                        }
-                    }
-    
-                    return null;
-                };
-                const Level = GetLevel(data.level);
-                const algorithmType = data.tags[0].displayNames[0].name;
-                
-                resolve( {problemURL, problemNum, problemTitle, Level, algorithmType} );
-            }
-            catch(error){
-                console.log(error);
-                reject(error);
-            }
-        })
-    }) 
+
+            return null;
+        };
+        const Level = GetLevel(data.level);
+        const algorithmType = data.tags[0].displayNames[0].name;
+        
+        resolve( {problemURL, problemNum, problemTitle, Level, algorithmType} );
+    }
+    catch(error){
+        console.log(error);
+        reject(error);
+    }
 }
 
 client.login(TOKEN);
