@@ -4,7 +4,7 @@ const Google = require('googleapis');
 const Axios = require('axios');
 const Cheerio = require('cheerio');
 const { YOUTUBE_API_KEY, TOKEN, MANAGER_ID, EMBED_COLOR, PREFIX, VIDIO_LINK_TEMPLETE  } = require('./Setting.json');
-const { SongData, BackjoonData } = require('./Data.json');
+const { SongData, BackjoonData, Memes } = require('./Data.json');
 
 const client = new Discord.Client({ intents: ["Guilds", "GuildMessages", "MessageContent"]});
 const Youtube = Google.google.youtube({
@@ -117,6 +117,12 @@ client.on('messageCreate', async msg => {
                 console.log(error);
             });
             break;
+        case '밈':
+        case '짤':
+        case '짤방':
+            var embed = CreateMeme(msg.author.avatarURL(), msg.author.username);
+            msg.reply({ embeds: [embed] });
+            break;
         case '노래세팅':
             if(msg.author.id !== MANAGER_ID) return;
             if(SongDataSet(args[1])){
@@ -129,6 +135,15 @@ client.on('messageCreate', async msg => {
         case '백준세팅':
             if(msg.author.id !== MANAGER_ID) return;
             if(BackjoonDataSet(args[1])){
+                msg.reply('무언가 오류가 발생함...');
+            }
+            else{
+                msg.reply('백준 데이터 저장 성공!');
+            }
+            break;
+        case '밈추가':
+            if(msg.author.id !== MANAGER_ID) return;
+            if(AddMeme(args[1])){
                 msg.reply('무언가 오류가 발생함...');
             }
             else{
@@ -176,12 +191,43 @@ function BackjoonDataSet(backjoonId){
     });
 }
 
+function AddMeme(memeUrl){
+    Memes.push(memeUrl);
+    let Data = {
+        SongData : SongData,
+        BackjoonData : BackjoonData,
+        Memes : Memes
+    }
+
+    let JsonData = JSON.stringify(Data);
+
+    Fs.writeFile('Data.json', JsonData, 'utf8', error => {
+        if(error){
+            console.log('fail to write file');
+            return false;
+        }
+        
+        console.log('success to write file');
+        return true;
+    });
+}
+
 function IntroduceBotEmbedCreater(){
     const embed = new Discord.EmbedBuilder()
         .setColor(EMBED_COLOR)
         .setTitle(':file_folder: __봇 소개__')
         .setDescription('2학년 1반 **이 주의 새로운 이슈**를 알려주는 봇입니다 :)')
         .setFooter({text: '도윤#0111 제작'});
+
+    return embed;
+}
+
+function CreateMeme(userIcon, userName){
+    const embed = new Discord.EmbedBuilder()
+        .setColor(EMBED_COLOR)
+        .setImage(Memes[Math.floor(Math.random() * Memes.length)])
+        .setTimestamp()
+        .setFooter({ text: userName, iconURL: userIcon });
 
     return embed;
 }
