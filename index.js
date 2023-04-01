@@ -3,14 +3,13 @@ const Discord = require('discord.js');
 const Google = require('googleapis');
 const Axios = require('axios');
 const Cheerio = require('cheerio');
+const { YOUTUBE_API_KEY, TOKEN, MANAGER_ID, EMBED_COLOR, PREFIX, VIDIO_LINK_TEMPLETE  } = require('./Setting.json');
 
 const client = new Discord.Client({ intents: ["Guilds", "GuildMessages", "MessageContent"]});
-
-let Youtube;
-let PREFIX;
-let EMBED_COLOR;
-let ManagerID;
-const VIDIO_LINK_TEMPLETE = 'https://www.youtube.com/watch?v=';
+const Youtube = Google.google.youtube({
+    version: 'v3',
+    auth: YOUTUBE_API_KEY
+});
 
 const Constellation = {
     물병: 0,
@@ -62,17 +61,6 @@ const BackjoonLevel = {
     루비I: 30
 };
 Object.freeze(BackjoonLevel);
-
-GetSettingData().then(data => {
-    Youtube = Google.google.youtube({
-        version: 'v3',
-        auth: data.YOUTUBE_API_KEY
-    });
-    PREFIX = data.PREFIX;
-    EMBED_COLOR = data.EMBED_COLOR;
-    ManagerID = data.MANAGER_ID;
-    client.login(data.TOKEN);
-});
 
 client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}`);
@@ -129,7 +117,7 @@ client.on('messageCreate', async msg => {
             });
             break;
         case '노래세팅':
-            if(msg.author.id !== ManagerID) return;
+            if(msg.author.id !== MANAGER_ID) return;
             if(SongDataSet(args[1])){
                 msg.reply('무언가 오류가 발생함..');
             }
@@ -138,7 +126,7 @@ client.on('messageCreate', async msg => {
             }
             break;
         case '백준세팅':
-            if(msg.author.id !== ManagerID) return;
+            if(msg.author.id !== MANAGER_ID) return;
             if(BackJoonDataSet(args[1])){
                 msg.reply('무언가 오류가 발생함...');
             }
@@ -148,22 +136,6 @@ client.on('messageCreate', async msg => {
             break;
     }
 });
-
-function GetSettingData(){
-    return new Promise((resolve, reject) => {
-        Fs.readFile('Setting.json', 'utf-8', (error, data) => {
-            if (error) {
-                console.log('error in read jsonFile');
-                reject(error);
-                return;
-            }
-
-            let jsonData = JSON.parse(data);
-
-            resolve(jsonData);
-        });
-    });
-}
 
 function SongDataSet(songId){
     Fs.readFile('Setting.json', 'utf-8', (error, data) => {
@@ -454,3 +426,5 @@ async function GetBackjoonData(){
         })
     }) 
 }
+
+client.login(TOKEN);
