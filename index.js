@@ -273,7 +273,9 @@ function InfoEmbedCreater(userIcon, userName){
             { name: '!오늘의운세 [별자리] or !운세 [별자리]', value: ':four_leaf_clover: - 별자리별 오늘의 운세를 알려줍니다.'},
             { name: '\n', value: '\n' },
             { name: '!이번주백준 or !백준', value: ':desktop: - 관리자가 선정한 이번주의 백준문제를 추천합니다.'},
-            { name: '\n', value: '\n' }
+            { name: '\n', value: '\n' },
+            { name: '!짤 or !짤방 or !밈', value: ':joy: - 개발과 관련된 재미있는 랜덤 짤들을 보여줍니다.'},
+            { name: '\n', value: '\n'}
         )
         .setTimestamp()
         .setFooter({ text: userName, iconURL: userIcon });
