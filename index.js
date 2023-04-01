@@ -3,7 +3,8 @@ const Discord = require('discord.js');
 const Google = require('googleapis');
 const Axios = require('axios');
 const Cheerio = require('cheerio');
-const { YOUTUBE_API_KEY, TOKEN, MANAGER_ID, EMBED_COLOR, PREFIX, VIDIO_LINK_TEMPLETE  } = require('./Setting.json');
+
+const { YOUTUBE_API_KEY, TOKEN, MANAGER_ID, EMBED_COLOR, PREFIX, VIDIO_LINK_TEMPLETE, IMAGE_HEIGHT, IMAGE_WIDTH  } = require('./Setting.json');
 const { SongData, BackjoonData, Memes } = require('./Data.json');
 
 const client = new Discord.Client({ intents: ["Guilds", "GuildMessages", "MessageContent"]});
@@ -120,34 +121,26 @@ client.on('messageCreate', async msg => {
         case '밈':
         case '짤':
         case '짤방':
-            var embed = CreateMeme(msg.author.avatarURL(), msg.author.username);
-            msg.reply({ embeds: [embed] });
+            CreateMeme(msg.author.avatarURL(), msg.author.username).then(embed => {
+                msg.reply({ embeds: [embed] });
+            });
             break;
         case '노래세팅':
             if(msg.author.id !== MANAGER_ID) return;
             if(SongDataSet(args[1])){
-                msg.reply('무언가 오류가 발생함..');
-            }
-            else{
-                msg.reply('노래 데이터 저장 성공!');
+                msg.reply('노래 데이터 저장성공!');
             }
             break;
         case '백준세팅':
             if(msg.author.id !== MANAGER_ID) return;
-            if(BackjoonDataSet(args[1])){
-                msg.reply('무언가 오류가 발생함...');
-            }
-            else{
-                msg.reply('백준 데이터 저장 성공!');
+            if(await BackjoonDataSet(args[1])){
+                msg.reply('백준 데이터 저장성공!');
             }
             break;
         case '밈추가':
             if(msg.author.id !== MANAGER_ID) return;
             if(AddMeme(args[1])){
-                msg.reply('무언가 오류가 발생함...');
-            }
-            else{
-                msg.reply('백준 데이터 저장 성공!');
+                msg.reply('밈 데이터 저장성공!');
             }
             break;
     }
@@ -156,7 +149,8 @@ client.on('messageCreate', async msg => {
 function SongDataSet(songId){
     let Data = {
         SongData : songId,
-        BackjoonData : backjoonId
+        BackjoonData : BackjoonData,
+        Memes : Memes
     }
 
     let JsonData = JSON.stringify(Data);
@@ -175,7 +169,8 @@ function SongDataSet(songId){
 function BackjoonDataSet(backjoonId){
     let Data = {
         SongData : SongData,
-        BackjoonData : backjoonId
+        BackjoonData : backjoonId,
+        Memes : Memes
     }
 
     let JsonData = JSON.stringify(Data);
@@ -222,10 +217,12 @@ function IntroduceBotEmbedCreater(){
     return embed;
 }
 
-function CreateMeme(userIcon, userName){
+async function CreateMeme(userIcon, userName){
+    let meme = Memes[Math.floor(Math.random() * Memes.length)];
+
     const embed = new Discord.EmbedBuilder()
         .setColor(EMBED_COLOR)
-        .setImage(Memes[Math.floor(Math.random() * Memes.length)])
+        .setImage(meme)
         .setTimestamp()
         .setFooter({ text: userName, iconURL: userIcon });
 
@@ -254,48 +251,42 @@ function InfoEmbedCreater(userIcon, userName){
     return embed;
 }
 
-function GetSongInfo() {
-    Youtube.videos.list({
-        id: SongData,
-        part: 'snippet, statistics, contentDetails'
-    }, (error, res) => {
-        if (error) {
-            console.log('error in youtube data parsing | VIDIO');
-            reject(error);
-            return;
-        }
-
-        const vidio = res.data.items[0];
-        
-        let songInfo = {
-            songTime: FormatDuration(vidio.contentDetails.duration),
-            songURL: VIDIO_LINK_TEMPLETE + SongData,
-            songName: vidio.snippet.title,
-            songThumbnail: GetVidioThumbnail(SongData),
-            channelName: '',
-            channelIcon: ''
-        }
-
-        const channelID = vidio.snippet.channelId;
-
-        Youtube.channels.list({
-            id: channelID,
-            part: 'snippet'
-        }, (error, res) => {
-            if (error) {
-                console.log('error in youtube data parsing | CHANNEL');
-                reject(error);
-                return;
-            }
-
-            channel = res.data.items[0];
-
-            songInfo.channelName = channel.snippet.title;
-            songInfo.channelIcon = channel.snippet.thumbnails.high.url;
-
-            resolve(songInfo);
+async function GetSongInfo() {
+    let songInfo = {
+        songTime: '',
+        songURL: '',
+        songName: '',
+        songThumbnail: '',
+        channelName: '',
+        channelIcon: ''
+    }
+    
+    try {
+        const videoResponse = await Youtube.videos.list({
+            id: SongData,
+            part: 'snippet, statistics, contentDetails'
         });
-    });
+    
+        const videoData = videoResponse.data.items[0];
+        songInfo.songTime = FormatDuration(videoData.contentDetails.duration);
+        songInfo.songURL = VIDIO_LINK_TEMPLETE + SongData;
+        songInfo.songName = videoData.snippet.title;
+        songInfo.songThumbnail = GetVidioThumbnail(SongData);
+    
+        const channelResponse = await Youtube.channels.list({
+            id: videoData.snippet.channelId,
+            part: 'snippet'
+        });
+    
+        const channelData = channelResponse.data.items[0];
+        songInfo.channelName = channelData.snippet.title;
+        songInfo.channelIcon = channelData.snippet.thumbnails.high.url;
+    } catch (error) {
+        console.log('error in youtube data parsing');
+        return;
+    }
+    
+    return songInfo;
 }
 
 async function RecommendSongEmbedCreater(userIcon, userName) {
@@ -407,12 +398,12 @@ async function GetFortuneHTMLData(constellation){
 }
 
 async function GetBackjoonData(){
-    const url = `https://solved.ac/api/v3/problem/show?problemId=${BackJoonData}`;
+    const url = `https://solved.ac/api/v3/problem/show?problemId=${BackjoonData}`;
     try{
         const { data } = await Axios.get(url);
         
         const problemURL = `https://www.acmicpc.net/problem/${BackjoonData}`;
-        const problemNum = `${BackJoonData}번`;
+        const problemNum = `${BackjoonData}번`;
         const problemTitle = data.titles[0].title;
         const GetLevel = currentLevel => {
             for(let key in BackjoonLevel){
@@ -426,11 +417,11 @@ async function GetBackjoonData(){
         const Level = GetLevel(data.level);
         const algorithmType = data.tags[0].displayNames[0].name;
         
-        resolve( {problemURL, problemNum, problemTitle, Level, algorithmType} );
+        return {problemURL, problemNum, problemTitle, Level, algorithmType};
     }
     catch(error){
         console.log(error);
-        reject(error);
+        return;
     }
 }
 
